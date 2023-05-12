@@ -1,0 +1,54 @@
+version: '3'
+services:
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_RANDOM_ROOT_PASSWORD: 'true'
+      #MYSQL_ROOT_PASSWORD: ''
+    expose:
+      - '3306'
+    volumes:
+      - mysqlVolume:/var/lib/mysql
+      - ./scripts/:/docker-entrypoint-initdb.d/
+    networks:
+      - Esprit
+    healthcheck:
+      test: "test -f /tmp/sqlend"
+      interval: 30s
+      retries: 10 
+      
+  eureka:
+    image: unholyhoper/eureka
+    expose:
+      - '8761'
+    ports:
+      - "8989:8761"
+    networks:
+      - Esprit
+      
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - mysql
+      - eureka
+    ports:
+      - "${APP_PORT}:8080"
+    networks:
+      - Esprit
+
+volumes:
+  mysqlVolume:
+
+networks:
+  Esprit:
+     driver: bridge
